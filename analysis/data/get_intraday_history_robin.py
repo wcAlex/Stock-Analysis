@@ -11,7 +11,7 @@ from datetime import date
 # https://robin-stocks.readthedocs.io/en/latest/quickstart.html 
 
 # Don't check in your username and password
-login = r.login("xxxx", "xxxxx")
+login = r.login("colorinpiano@gmail.com", "MoreMoneyMoreFree@2020")
 
 def list_my_stock_holdings():
     my_stocks = r.build_holdings()
