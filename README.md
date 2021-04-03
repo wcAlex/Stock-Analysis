@@ -16,6 +16,7 @@ conda install -c conda-forge pandas
 conda install -c plotly plotly
 
 pip install futu-api
+pip install pep8
 <!-- pip install cbpro -->
 
 ## Python Common Structure and Import
