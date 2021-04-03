@@ -47,6 +47,7 @@ def get_history_data(cryptoId='BTC-USD', startDate = '2021-03-31', endDate = '20
     
     if save:
         df.to_csv(dest_location)
+        print("finish saving data {0}".format(dest_location))
 
     return df
 
@@ -55,11 +56,11 @@ start = '2020-06-01'
 end = '2021-04-03'
 
 cryptoSymbol='BTC-USD'
-pd = get_history_data(cryptoId=cryptoSymbol, startDate = start, endDate = end, 
+btcDf = get_history_data(cryptoId=cryptoSymbol, startDate = start, endDate = end, 
     intervalInS = 60, save = True, dest_location = destLocPattern.format(cryptoSymbol.lower(), "minute", start, end) )
 # print(pd)
 
 cryptoSymbol='ETH-USD'
-pd = get_history_data(cryptoId=cryptoSymbol, startDate = start, endDate = end, 
+ethDf = get_history_data(cryptoId=cryptoSymbol, startDate = start, endDate = end, 
     intervalInS = 60, save = True, dest_location = destLocPattern.format(cryptoSymbol.lower(), "minute", start, end) )
 
