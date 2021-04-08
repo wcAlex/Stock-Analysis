@@ -88,3 +88,5 @@ class PremiumWithShortMemory(TradeStrategy):
             if trade:
                 print("Sell {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium average={6}".format(
                     symbol, recordDate, curMarketPrice, curPremium, int(account.sharesOnHold * sellPercentage), lastOpenTrade.sellValue, average))
+
+        account.updateAccountValue(curMarketPrice)

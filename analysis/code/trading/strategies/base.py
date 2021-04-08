@@ -34,14 +34,25 @@ class Account:
     def __init__(self, totalValue) -> None:
         self.purchasePower = totalValue
         self.sharesOnHold = 0
+        # TODO: Calculate current total Value ..
         self.totalValue = totalValue
         self.trades = deque()
 
-    def sync():
+    def create_trades_records(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        purchases, sells = [], []
+        for trade in self.trades:
+            purchases.append([trade.buyDate, trade.buyPrice])
+            sells.append([trade.sellDate, trade.sellPrice])
+
+        return (pd.DataFrame(data=purchases, columns=["date", "purchase_price"]).set_index("date"),
+                pd.DataFrame(data=sells, columns=["date", "sell_price"]).set_index("date"))
+
+    def updateAccountValue(self, currentPrice):
         """
         Sync trading account to update local acount information, such as purchase power, order, stock share ...
         """
-        pass
+
+        self.totalValue = self.purchasePower + self.sharesOnHold * currentPrice
 
     def buy(self, symbol, amount, price, date=None) -> Trade:
         """
@@ -115,7 +126,7 @@ class TradeStrategy:
     def __init__(self) -> None:
         pass
 
-    def make_decision(self, account: Account, history: pd.DataFrame, context: dict):
+    def make_decision(self, account: Account, history: pd.DataFrame, context: dict, symbol: str = 'GBTC'):
         """
         account represents trading account (ex: FUTU), use to fetch account status, orders, open trades and execute buy and sell.
         history is 2D table, contains securities' trade records (from past to current), index is date.

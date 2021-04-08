@@ -34,13 +34,6 @@ class PremiumStrategyTest(unittest.TestCase):
 
         return data
 
-    def test_run(self):
-        strategy = PremiumWithShortMemory()
-
-        account = Account(1000.0)
-        strategy.make_decision(Account(), self.testData, {})
-        trades = account.trades
-
     def test_get_current_premium(self):
         strategy = PremiumWithShortMemory()
 
@@ -136,6 +129,12 @@ class PremiumStrategyTest(unittest.TestCase):
         # Verify account status after buy and sell
         self.assertEqual(0, acct.sharesOnHold)
         self.assertEqual(100 - 52.5 + 59.5, acct.purchasePower)
+
+        buyDf, sellDf = acct.create_trades_records()
+        self.assertEqual(1, buyDf.shape[0])
+        self.assertEqual(52.5, buyDf["purchase_price"][0])
+        self.assertEqual(1, sellDf.shape[0])
+        self.assertEqual(59.5, sellDf["sell_price"][0])
 
 
 if __name__ == '__main__':
