@@ -38,7 +38,7 @@ class PremiumWithShortMemory(TradeStrategy):
         premiumList = data['premium']
         return (sorted(premiumList, reverse=True)[:n], sorted(premiumList, reverse=False)[:n])
 
-    def make_decision(self, account: Account, history: pd.DataFrame, context: dict):
+    def make_decision(self, account: Account, history: pd.DataFrame, context: dict, symbol: str = 'GBTC'):
         """
         account: use to fetch current stock account status
         history: past market trading data, minute level, expect to be up to date at minutes level
@@ -66,18 +66,25 @@ class PremiumWithShortMemory(TradeStrategy):
         topNPremiums, bottomNPremiums = self.get_top_bottom_n_premium(
             history[:120], self._sampleCnt)
 
-        premiumBuyTarget = sum(topNPremiums)/self._sampleCnt
-        premiumSellTareget = sum(bottomNPremiums)/self._sampleCnt
+        premiumBuyTarget = sum(bottomNPremiums)/self._sampleCnt
+        premiumSellTareget = sum(topNPremiums)/self._sampleCnt
 
-        curPremium, curMarketPrice, recordDate = self.get_current_premium()
+        curPremium, curMarketPrice, recordDate = self.get_current_premium(
+            history)
         if curPremium < premiumBuyTarget - self._delta:
-            account.buy(account.purchasePower, curMarketPrice, recordDate)
-            print("Buy GBTC at {0}, price={1}, premium={2}, share={3}, total={4}, current premium average={5}".format(
-                recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, average))
+            trade = account.buy(symbol, account.purchasePower,
+                                curMarketPrice, date=recordDate)
+
+            if trade:
+                print("Buy {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium average={5}".format(
+                    symbol, recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, average))
 
         lastOpenTrade = account.get_last_opentrade()
         if lastOpenTrade and curPremium > premiumSellTareget + self._delta and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
-            account.sell(curMarketPrice, percentage=sellPercentage)
-            print("Sell GBTC at {0}, price={1}, premium={2}, share={3}, total={4}, current premium average={5}".format(
-                recordDate, curMarketPrice, curPremium, int(self.sharesOnHold * sellPercentage), lastOpenTrade.sellAmount, average))
+            trade = account.sell(symbol, curMarketPrice,
+                                 percentage=sellPercentage, date=recordDate)
+
+            if trade:
+                print("Sell {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium average={6}".format(
+                    symbol, recordDate, curMarketPrice, curPremium, int(account.sharesOnHold * sellPercentage), lastOpenTrade.sellValue, average))

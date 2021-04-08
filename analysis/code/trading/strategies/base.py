@@ -1,4 +1,5 @@
 import pandas as pd
+import datetime
 from enum import Enum
 from typing import Tuple
 from collections import deque
@@ -10,6 +11,23 @@ class Decision(Enum):
     NoAction = 3
     SellAtMarket = 4
     SellLimitOrder = 5
+
+
+class Trade:
+    def __init__(self, shares, buyPrice, buyValue, buyDate=None, sellPrice=None, sellValue=None, sellDate=None) -> None:
+        self.shares = shares
+        self.buyPrice = buyPrice
+        self.buyDate = buyDate
+        self.buyValue = buyValue
+        self.sellPrice = sellPrice
+        self.sellDate = sellDate
+        self.sellValue = sellValue
+
+    def isComplete(self):
+        """
+        Trade is completed when it has both sell and buy price.
+        """
+        return self.buyPrice and self.sellPrice
 
 
 class Account:
@@ -25,25 +43,30 @@ class Account:
         """
         pass
 
-    def buy(self, amount, price, date=None):
+    def buy(self, symbol, amount, price, date=None) -> Trade:
         """
         There is only one open buy order allowed.
         """
         if len(self.trades) != 0 and not self.trades[-1].isComplete():
-            # has open order unfilled.
+            print(
+                "Couldn't make buy order when having an open order, need to complete current one first.")
             return None
 
         if amount > self.purchasePower:
+            print("Asking amount {} exceeds current purchase power {}".format(
+                amount, self.purchasePower))
             return None
 
-        sharesToBuy = amount / price
+        sharesToBuy = int(amount / price)
+        purchaseValue = sharesToBuy * price
         # TODO, actual buy from FUTU
-        print("...")
+        print("Buy {} {} shares at {}, total cost is {}, date {}".format(
+            symbol, sharesToBuy, price, purchaseValue, date))
 
         self.sharesOnHold += sharesToBuy
-        self.purchasePower -= amount
+        self.purchasePower -= purchaseValue
 
-        openTrade = Trade(shares=sharesToBuy, buyAmount=amount,
+        openTrade = Trade(shares=sharesToBuy, buyValue=purchaseValue,
                           buyPrice=price, buyDate=date)
         self.trades.append(openTrade)
         return openTrade
@@ -54,23 +77,25 @@ class Account:
         """
         pass
 
-    def sell(self, price, percentage=1.0, date=None):
+    def sell(self, symbol, price, percentage=1.0, date=None) -> Trade:
         if len(self.trades) == 0 or self.trades[-1].isComplete():
             # has open order unfilled.
             return None
 
-        # TODO actual sell at FUTU
-        print("....")
-
         sharesToSell = int(self.sharesOnHold * percentage)
+        sellValue = sharesToSell * price
+
+        # TODO actual sell at FUTU
+        print("Sell {} {} shares at {}, total value is {}, date {}".format(
+            symbol, sharesToSell, price, sellValue, date))
+
         lastTrade = self.trades[-1]
         self.sharesOnHold -= sharesToSell
         lastTrade.sellPrice = price
         lastTrade.sellDate = date
-        lastTrade.sellAmount = sharesToSell * price
+        lastTrade.sellValue = sellValue
 
-        self.purchasePower += (sharesToSell * price -
-                               lastTrade.buyPrice * lastTrade.buyAmount)
+        self.purchasePower += sellValue
         return lastTrade
 
     def sell_at_market(self):
@@ -84,23 +109,6 @@ class Account:
             return self.trades[-1]
         else:
             return None
-
-
-class Trade:
-    def __init__(self, shares, buyPrice, buyAmount, buyDate=None, sellPrice=None, sellAmount=None, sellDate=None) -> None:
-        self.shares = shares
-        self.buyPrice = buyPrice
-        self.buyDate = buyDate
-        self.buyAmount = buyAmount
-        self.sellPrice = sellPrice
-        self.sellDate = sellDate
-        self.sellAmount = sellAmount
-
-    def isComplete(self):
-        """
-        Trade is completed when it has both sell and buy price.
-        """
-        return self.buyPrice and self.sellPrice
 
 
 class TradeStrategy:
