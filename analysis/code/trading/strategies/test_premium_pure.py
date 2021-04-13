@@ -97,6 +97,7 @@ class PremiumStrategyTest(unittest.TestCase):
         df = df.set_index('date')
         self.assertEqual(5, len(df.columns))
         self.assertEqual(4, df.shape[0])
+        print(df.to_string())
 
         # time to buy
         acct = Account(totalValue=100)

@@ -6,9 +6,7 @@ from typing import Tuple
 
 class PremiumTrendIndicator(TradeStrategy):
     """
-    This trading strategy only considers premium in the past to decide buy and sell point.
-    There is no trend detection, no internal state, just make trade decision base on the average of
-    top N highest and lowest premium percentage.
+    This trading strategy only considers premium trend using ADX.
     """
 
     def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001) -> None:
@@ -25,7 +23,7 @@ class PremiumTrendIndicator(TradeStrategy):
 
     def get_current_info(self, history: pd.DataFrame) -> Tuple[float, float, float, datetime]:
         """
-        get the latest premium, price and date
+        get the latest premium, pos/neg indicator and date
         """
 
         history = history.dropna()
@@ -46,14 +44,13 @@ class PremiumTrendIndicator(TradeStrategy):
         context: context dictionary
 
         Algorithm:
-        1) Pick the memoryLenth of validate (stock record not null) data points from history.
-        2) Calculate premium columns with percentage, sort on preimum percentage.
-        3) Calculate buy target by averaging the top sampleCnt highest premium precentage.
-        4) Calculate sell target by averaging the bottom lowest premium percentage
-        5) Return decision
-            a) Buy when current premium percentage is lower than the buy target and there is no holdings.
-            b) Sell when current premium percentage is higher than the sell target and there is one holdings.
-            c) No action for the rest of the cases.
+        1) Pick the memoryLenth of validate (stock record not null) data points from history
+        2) Calculate ADX based on the latest premium info
+        3) Calculate buy/sell targets by getting the latest premium ADX
+        4) Return decision
+            a) Buy when current premium once ADX is above threshold and postive indicator is greater than negative indicator
+            b) Sell when current premium ADX is above threshold and postive indicator is lower than negative indicator
+            c) No action for the rest of the cases
         """
 
         history = history.dropna()
