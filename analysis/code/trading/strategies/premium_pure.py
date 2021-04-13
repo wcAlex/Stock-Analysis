@@ -30,8 +30,19 @@ class PremiumWithShortMemory(TradeStrategy):
 
         history = history.dropna()
         history = history.sort_index(ascending=False)
-
+        
         return (history['premium'][0], history['open_price_y'][0], datetime.strptime(history.index[0], '%Y-%m-%dT%H:%M:%SZ'))
+
+    def get_current_adx_info(self, history: pd.DataFrame) -> Tuple[float, float, float, datetime]:
+        """
+        get the latest premium, pos/neg indicator and date
+        """
+
+        history = history.dropna()
+        history = history.sort_index(ascending=False)
+
+        return (history['premium_high'][0], history['pos_directional_indicator'][0], 
+        history['neg_directional_indicator'][0], datetime.strptime(history.index[0], '%Y-%m-%dT%H:%M:%SZ'))
 
     def get_top_bottom_n_premium(self, data: pd.DataFrame, n: int) -> Tuple[list, list]:
 
@@ -57,6 +68,11 @@ class PremiumWithShortMemory(TradeStrategy):
 
         history = history.dropna()
         history = history.sort_index(ascending=False)
+
+        # Get current ADx
+        curADX, posDI, negDI, recordDate = self.get_current_adx_info(history)
+        threshold = 35
+        print(curADX, posDI, negDI)
 
         # We might need consider permium average later.
         premiumColumn = history["premium"]
