@@ -17,10 +17,15 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
         data = pd.read_csv(
             os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_weekly_combined_31_03_2021.csv"), sep=",", index_col='begins_at')
 
+        self.testData = self.data_cleanup(data)   
         self.testData = self.preprocess_data(data)
     
         return super().setUp()      
-    
+
+
+    def data_cleanup(self, data: pd.DataFrame) -> pd.DataFrame:
+        data.drop(data[data['open_price_y'].isnull()].index, inplace=True)
+        return data  
     
     def preprocess_data(self, data: pd.DataFrame) -> pd.DataFrame:
         btc_per_share = 0.00094498
@@ -80,10 +85,9 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
 
     def test_get_current_info(self):
         strategy = PremiumTrendIndicator()
-        newData = self.newData_setup()
-  
-        curADX, curPosDI, curNegDI, recordDate = strategy.get_current_info(self.testData, newData)
-        self.assertEqual(recordDate.strftime('%Y-%m-%dT%H:%M:%SZ'), '2021-04-01T16:15:00Z')
+
+        curADX, curPosDI, curNegDI, recordDate = strategy.get_current_ADX(self.testData)
+        self.assertEqual(recordDate.strftime('%Y-%m-%dT%H:%M:%SZ'), '2021-03-31T14:45:00Z')
         
 
     # def test_get_top_bottom_n_premium(self):
