@@ -2,7 +2,7 @@ from datetime import date, datetime
 from base import TradeStrategy, Account, Decision
 import pandas as pd
 from typing import Tuple
-
+from ta.trend import ADXIndicator
 
 class PremiumTrendIndicator(TradeStrategy):
     """
@@ -21,15 +21,53 @@ class PremiumTrendIndicator(TradeStrategy):
         self._sampleCnt = sampleCnt
         self._delta = delta
 
-    def get_current_info(self, history: pd.DataFrame) -> Tuple[float, float, float, datetime]:
+    def data_preparation(self, data: pd.DataFrame) -> pd.DataFrame:
+        btc_per_share = 0.00094498
+
+        data["nav_open_price"] = data["open_price_x"] * \
+            btc_per_share
+        data["nav_close_price"] = data["close_price_x"] * btc_per_share
+        data["nav_high_price"] = data["high_price_x"] * \
+            btc_per_share
+        data["nav_low_price"] = data["low_price_x"] * \
+            btc_per_share
+
+        # Calculate premium high
+        data["nav_high_price"] = data["high_price_x"] * btc_per_share
+        data["premium_high"] = (data["high_price_y"] - data["nav_high_price"]) / data["nav_high_price"]
+        data["premium_high"].dropna()
+
+        # Calculate premium low
+        data["nav_low_price"] = data["low_price_x"] * btc_per_share
+        data["premium_low"] = (data["low_price_y"] - data["nav_low_price"]) / data["nav_low_price"]
+        data["premium_low"].dropna()
+
+        # Calculate premium close
+        data["nav_close_price"] = data["close_price_x"] * btc_per_share
+        data["premium_close"] = (data["close_price_y"] - data["nav_close_price"]) / data["nav_close_price"]
+        data["premium_close"].dropna()
+
+        data.dropna()
+        return data
+
+
+    def get_current_info(self, history: pd.DataFrame, newData: pd.DataFrame) -> Tuple[float, float, float, datetime]:
         """
-        get the latest premium, pos/neg indicator and date
+        get the latest ADX, pos/neg indicator and date
         """
 
         history = history.dropna()
         history = history.sort_index(ascending=False)
 
-        return (history['premium_high'][0], history['pos_directional_indicator'][0], 
+        newData = self.data_preparation(newData)
+        history = history.append(newData)
+        smoothed = 14
+        adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
+        history['pos_directional_indicator'] = adxI.adx_pos()
+        history['neg_directional_indicator'] = adxI.adx_neg()
+        history['adx'] = adxI.adx() 
+        print(history.to_string())
+        return (history['adx'][0], history['pos_directional_indicator'][0], 
         history['neg_directional_indicator'][0], datetime.strptime(history.index[0], '%Y-%m-%dT%H:%M:%SZ'))
 
     def get_top_bottom_n_premium(self, data: pd.DataFrame, n: int) -> Tuple[list, list]:
@@ -56,7 +94,15 @@ class PremiumTrendIndicator(TradeStrategy):
         history = history.dropna()
         history = history.sort_index(ascending=False)
 
-        # Get current ADx
+        # Get current AD
+        newData = self.data_preparation(newData)
+        history = history.append(newData, ignore_index=True)
+        smoothed = 70
+        adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
+        history['pos_directional_indicator'] = adxI.adx_pos()
+        history['neg_directional_indicator'] = adxI.adx_neg()
+        history['adx'] = adxI.adx()
+
         curADX, posDI, negDI, recordDate = self.get_current_adx(history)
         threshold = 35
 

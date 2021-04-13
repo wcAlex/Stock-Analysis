@@ -17,7 +17,10 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
         data = pd.read_csv(
             os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_weekly_combined_31_03_2021.csv"), sep=",", index_col='begins_at')
 
-        self.testData = self.data_cleanup(data)   
+        newData = pd.read_csv(os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_three_days_combined_01_04_2021"), sep=",", index_col='begins_at')
+
+        self.testData = self.data_cleanup(data) 
+        self.newTestData = self.data_cleanup(newData)
         self.testData = self.preprocess_data(data)
     
         return super().setUp()      
@@ -67,26 +70,26 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
 
         data = [
             ["2021-04-01T16:15:00Z", 
-            54852.74, 55014.92, 55358.09, 54708.02,
+            57416.685, 57472.885, 57693.430393, 57247.053588,
             0, "reg", False, "BTCUSD",
-            48.52, 48.37, 48.57, 48.33,
+            0.37, 0.12, 0.57, 0.33,
             35086.0, "reg", False, "GBTC"]
         ]
 
         df = pd.DataFrame(
             data, columns=
-            ["date",
+            ["begins_at",
              "open_price_x", "close_price_x", "high_price_x", "low_price_x", 
              "volume_x", "session_x", "interpolated_x", "symbol_x",
              "open_price_y", "close_price_y", "high_price_y", "low_price_y",
              "volume_y", "session_y", "interpolated_y", "symbol_y"])
-        df = df.set_index('date')
+        df = df.set_index('begins_at')
         return df
 
     def test_get_current_info(self):
         strategy = PremiumTrendIndicator()
-
-        curADX, curPosDI, curNegDI, recordDate = strategy.get_current_ADX(self.testData)
+        print(self.newTestData.to_string())
+        curADX, curPosDI, curNegDI, recordDate = strategy.get_current_info(self.testData, newData)
         self.assertEqual(recordDate.strftime('%Y-%m-%dT%H:%M:%SZ'), '2021-03-31T14:45:00Z')
         
 
