@@ -27,7 +27,7 @@ class PremiumWithShortMemory(TradeStrategy):
         """
         get the latest premium, price and date
         """
-
+        
         history = history.dropna()
         history = history.sort_index(ascending=False)
         
@@ -37,10 +37,10 @@ class PremiumWithShortMemory(TradeStrategy):
         """
         get the latest premium, pos/neg indicator and date
         """
-
+        
         history = history.dropna()
         history = history.sort_index(ascending=False)
-
+        print(history.index[0])
         return (history['premium_high'][0], history['pos_directional_indicator'][0], 
         history['neg_directional_indicator'][0], datetime.strptime(history.index[0], '%Y-%m-%dT%H:%M:%SZ'))
 
@@ -87,6 +87,7 @@ class PremiumWithShortMemory(TradeStrategy):
 
         curPremium, curMarketPrice, recordDate = self.get_current_premium(
             history)
+
         if curPremium < premiumBuyTarget - self._delta:
             trade = account.buy(symbol, account.purchasePower,
                                 curMarketPrice, date=recordDate)

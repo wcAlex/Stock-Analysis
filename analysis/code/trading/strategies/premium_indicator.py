@@ -51,13 +51,12 @@ class PremiumTrendIndicator(TradeStrategy):
         return data
 
 
-    def get_current_info(self, history: pd.DataFrame, newData: pd.DataFrame) -> Tuple[float, float, float, datetime]:
+    def get_current_info(self, history: pd.DataFrame, newData: pd.DataFrame) -> Tuple[float, float, float, float, float, datetime, pd.DataFrame]:
         """
         get the latest ADX, pos/neg indicator and date
         """
 
         history = history.dropna()
-        history = history.sort_index(ascending=False)
 
         newData = self.data_preparation(newData)
         history = history.append(newData)
@@ -66,16 +65,24 @@ class PremiumTrendIndicator(TradeStrategy):
         history['pos_directional_indicator'] = adxI.adx_pos()
         history['neg_directional_indicator'] = adxI.adx_neg()
         history['adx'] = adxI.adx() 
-        print(history.to_string())
-        return (history['adx'][0], history['pos_directional_indicator'][0], 
-        history['neg_directional_indicator'][0], datetime.strptime(history.index[0], '%Y-%m-%dT%H:%M:%SZ'))
+
+        adx = history.iloc[-1]['adx']
+        posDI = history.iloc[-1]['pos_directional_indicator']
+        negDI = history.iloc[-1]['neg_directional_indicator']
+        marketPrice = history.iloc[-1]['open_price_y']
+        curPremium = history.iloc[-1]['premium_close']
+        date =  history.index[-1]
+        
+        return (adx, posDI, negDI, marketPrice, curPremium, datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ'), history)
 
     def get_top_bottom_n_premium(self, data: pd.DataFrame, n: int) -> Tuple[list, list]:
 
-        premiumList = data['premium']
-        return (sorted(premiumList, reverse=True)[:n], sorted(premiumList, reverse=False)[:n])
+        premiumHighList = data['premium_high']
+        premiumLowList = data['premium_low']
 
-    def make_decision(self, account: Account, history: pd.DataFrame, context: dict, symbol: str = 'GBTC'):
+        return (sorted(premiumHighList, reverse=True)[:n], sorted(premiumLowList, reverse=False)[:n])
+
+    def make_decision(self, account: Account, history: pd.DataFrame, newData: pd.DataFrame, context: dict, symbol: str = 'GBTC'):
         """
         account: use to fetch current stock account status
         history: past market trading data, minute level, expect to be up to date at minutes level
@@ -91,40 +98,41 @@ class PremiumTrendIndicator(TradeStrategy):
             c) No action for the rest of the cases
         """
 
-        history = history.dropna()
-        history = history.sort_index(ascending=False)
+        curADX, curPosDI, curNegDI, curMarketPrice, curPremium, recordDate, history = self.get_current_info(history, newData)
+        threshold = 40
 
-        # Get current AD
-        newData = self.data_preparation(newData)
-        history = history.append(newData, ignore_index=True)
-        smoothed = 70
-        adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
-        history['pos_directional_indicator'] = adxI.adx_pos()
-        history['neg_directional_indicator'] = adxI.adx_neg()
-        history['adx'] = adxI.adx()
+        # premiumColumn = history["premium_close"]
+        # premiumPast120 = premiumColumn[:120]
+        # average = sum(premiumPast120)/120
 
-        curADX, posDI, negDI, recordDate = self.get_current_adx(history)
-        threshold = 35
+        topNPremiums, bottomNPremiums = self.get_top_bottom_n_premium(
+            history[:50], self._sampleCnt)
+
+        premiumBuyTarget = sum(bottomNPremiums)/50
+        premiumSellTareget = sum(topNPremiums)/50
+        avg = (premiumBuyTarget + premiumSellTareget)/2
+
 
         # Buy 
-        if curADX > threshold and negDI > posDI:
+        if curADX > threshold and curNegDI > curPosDI and curPremium < avg:
             trade = account.buy(symbol, account.purchasePower,
                                 curMarketPrice, date=recordDate)
 
             if trade:
-                print("Buy {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium average={5}".format(
-                    symbol, recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, average))
+                print("Buy {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium avg={5}".format(
+                    symbol, recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, avg))
 
         lastOpenTrade = account.get_last_opentrade()
 
         # Sell
-        if lastOpenTrade and curADX > threshold and posDI > negDI and curMarketPrice > lastOpenTrade.buyPrice:
+        if lastOpenTrade and curADX > threshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
             trade = account.sell(symbol, curMarketPrice,
                                  percentage=sellPercentage, date=recordDate)
 
             if trade:
-                print("Sell {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium average={6}".format(
-                    symbol, recordDate, curMarketPrice, curPremium, int(account.sharesOnHold * sellPercentage), lastOpenTrade.sellValue, average))
+                print("Sell {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium avg={6}".format(
+                    symbol, recordDate, curMarketPrice, curPremium, int(account.sharesOnHold * sellPercentage), lastOpenTrade.sellValue, avg))
 
         account.updateAccountValue(curMarketPrice)
+        return (curADX, history, recordDate, curPosDI, curNegDI)
