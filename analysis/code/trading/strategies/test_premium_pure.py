@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from premium_pure import PremiumWithShortMemory
 from base import Decision, Account
-from ta.trend import ADXIndicator
+
 
 class PremiumStrategyTest(unittest.TestCase):
 
@@ -12,16 +12,10 @@ class PremiumStrategyTest(unittest.TestCase):
 
         data = pd.read_csv(
             os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_weekly_combined_31_03_2021.csv"), sep=",", index_col='begins_at')
-        
-        self.testData = self.data_cleanup(data)
+
         self.testData = self.preprocess_data(data)
-    
+
         return super().setUp()
-
-    def data_cleanup(self, data: pd.DataFrame) -> pd.DataFrame:
-        data.drop(data[data['open_price_y'].isnull()].index, inplace=True)
-        return data    
-
 
     def preprocess_data(self, data: pd.DataFrame) -> pd.DataFrame:
         btc_per_share = 0.00094607
@@ -36,36 +30,13 @@ class PremiumStrategyTest(unittest.TestCase):
 
         data["premium"] = (data["open_price_y"] -
                            data["nav_open_price"]) / data["nav_open_price"]
-
-        # Calculate premium high
-        data["nav_high_price"] = data["high_price_x"] * btc_per_share
-        data["premium_high"] = (data["high_price_y"] - data["nav_high_price"]) / data["nav_high_price"]
-        data["premium_high"].dropna()
-
-        # Calculate premium low
-        data["nav_low_price"] = data["low_price_x"] * btc_per_share
-        data["premium_low"] = (data["low_price_y"] - data["nav_low_price"]) / data["nav_low_price"]
-        data["premium_low"].dropna()
-
-        # Calculate premium close
-        data["nav_close_price"] = data["close_price_x"] * btc_per_share
-        data["premium_close"] = (data["close_price_y"] - data["nav_close_price"]) / data["nav_close_price"]
-        data["premium_close"].dropna()
-
-        # Calculate ADX, pos/neg direction indicators
-        smoothed = 70
-        adxI = ADXIndicator(data['premium_high'], data['premium_low'], data['premium_close'], smoothed, False)
-        data['pos_directional_indicator'] = adxI.adx_pos()
-        data['neg_directional_indicator'] = adxI.adx_neg()
-        data['adx'] = adxI.adx()
-        
-        data.dropna()
+        data = data.dropna()
 
         return data
 
     def test_get_current_premium(self):
         strategy = PremiumWithShortMemory()
-        
+
         curPremium, curMarketPrice, recordDate = strategy.get_current_premium(
             self.testData)
         self.assertEqual(recordDate.strftime(
@@ -85,19 +56,18 @@ class PremiumStrategyTest(unittest.TestCase):
 
         # prepare data
         data = [
-            ["2021-03-18T16:15:00Z", 55.5, 0.5, -0.062568, 206.839934, 195.699467],
-            ["2021-03-18T16:16:00Z", 56.5, 0.6, -0.062571, 197.795595, 204.444163],
-            ["2021-03-18T16:17:00Z", 53.5, 0.3, -0.067294, 197.795595, 204.444163],
-            ["2021-03-18T16:18:00Z", 52.5, 0.2, -0.067814, 197.795595, 208.641353],
+            ["2021-03-18T16:15:00Z", 55.5, 0.5],
+            ["2021-03-18T16:16:00Z", 56.5, 0.6],
+            ["2021-03-18T16:17:00Z", 53.5, 0.3],
+            ["2021-03-18T16:18:00Z", 52.5, 0.2],
         ]
 
         df = pd.DataFrame(
-            data, columns=
-            ["date", "open_price_y", "premium", "premium_high", "pos_directional_indicator", "neg_directional_indicator"])
+            data, columns=["date", "open_price_y", "premium"])
         df = df.set_index('date')
-        self.assertEqual(5, len(df.columns))
+        self.assertEqual(2, len(df.columns))
         self.assertEqual(4, df.shape[0])
-    
+
         # time to buy
         acct = Account(totalValue=100)
         strategy = PremiumWithShortMemory(memoryLenth=4, sampleCnt=2)
@@ -145,7 +115,7 @@ class PremiumStrategyTest(unittest.TestCase):
 
         curPremium, curMarketPrice, recordDate = strategy.get_current_premium(
             df)
-
+        print(len(trades))
         strategy.make_decision(acct, df, {}, 'GBTC')
         trades = acct.trades
 

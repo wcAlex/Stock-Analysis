@@ -145,13 +145,13 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
                 rowCount += 1
         
         strategy = PremiumTrendIndicator(memoryLenth=4, sampleCnt=2)
-        
+        print(sellTestData.to_string())
         for row in sellTestData.itertuples():
 
             curTestData = self.dataFrame_builder(row)
             curADX, past_data, recordDate, curPosDI, curNegDI = strategy.make_decision(acct, past_data, curTestData, {}, 'GBTC')
             trades = acct.trades
-            print(curADX)
+
             if curADX >= threshold and curPosDI > curNegDI:
                 self.assertTrue(curADX >= threshold)
                 self.assertEqual(1, len(trades))
@@ -163,7 +163,7 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
                 break
             else:
                 self.assertEqual(1, len(trades))
-        
+        # print(curADX)
 
         # # time to sell
         # newData = pd.DataFrame([["2021-03-18T16:20:00Z", 59.5, 0.8]],

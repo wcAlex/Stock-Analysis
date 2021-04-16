@@ -112,7 +112,7 @@ class PremiumTrendIndicator(TradeStrategy):
         premiumSellTareget = sum(topNPremiums)/50
         avg = (premiumBuyTarget + premiumSellTareget)/2
 
-
+        
         # Buy 
         if curADX > threshold and curNegDI > curPosDI and curPremium < avg:
             trade = account.buy(symbol, account.purchasePower,
@@ -123,7 +123,13 @@ class PremiumTrendIndicator(TradeStrategy):
                     symbol, recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, avg))
 
         lastOpenTrade = account.get_last_opentrade()
-
+        if curPosDI > curNegDI:
+            print(11111111111111111111111111111111111111)
+        print(curMarketPrice)
+        print(curADX)
+        # print(curPosDI)
+        # print(curNegDI)
+        # print(curMarketPrice)
         # Sell
         if lastOpenTrade and curADX > threshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
