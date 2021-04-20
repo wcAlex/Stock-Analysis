@@ -17,6 +17,9 @@ conda install -c plotly plotly
 
 pip install futu-api
 pip install pep8
+
+<!-- we are using td-ameritrade for history data and trading -->
+pip install td-ameritrade-python-api
 <!-- pip install cbpro -->
 
 ## Python Common Structure and Import
