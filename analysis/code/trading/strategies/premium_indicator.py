@@ -54,7 +54,7 @@ class PremiumTrendIndicator(TradeStrategy):
         return data
 
 
-    def get_current_info(self, history: pd.DataFrame, newData: pd.DataFrame) -> Tuple[float, float, float, float, float, datetime, pd.DataFrame]:
+    def get_current_info(self, history: pd.DataFrame, newData: pd.DataFrame, isTD: bool = False) -> Tuple[float, float, float, float, float, datetime, pd.DataFrame]:
         """
         get the latest ADX, pos/neg indicator and date
         """
@@ -64,6 +64,7 @@ class PremiumTrendIndicator(TradeStrategy):
         newData = self.data_preparation(newData)
         history = history.append(newData)
         smoothed = 14
+    
         adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
         history['pos_directional_indicator'] = adxI.adx_pos()
         history['neg_directional_indicator'] = adxI.adx_neg()
@@ -76,7 +77,8 @@ class PremiumTrendIndicator(TradeStrategy):
         curPremium = history.iloc[-1]['premium_close']
         date =  history.index[-1]
         
-        return (adx, posDI, negDI, marketPrice, curPremium, datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ'), history)
+        return (adx, posDI, negDI, marketPrice, curPremium, 
+        datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ') if not isTD else datetime.strptime(date, '%Y-%m-%d %H:%M:%S'), history)
 
     def get_top_bottom_n_premium(self, data: pd.DataFrame, n: int) -> Tuple[list, list]:
 
@@ -85,7 +87,7 @@ class PremiumTrendIndicator(TradeStrategy):
 
         return (sorted(premiumHighList, reverse=True)[:n], sorted(premiumLowList, reverse=False)[:n])
 
-    def make_decision(self, account: Account, history: pd.DataFrame, newData: pd.DataFrame, context: dict, symbol: str = 'GBTC'):
+    def make_decision(self, account: Account, history: pd.DataFrame, newData: pd.DataFrame, context: dict, symbol: str = 'GBTC', isTD: bool = False):
         """
         account: use to fetch current stock account status
         history: past market trading data, minute level, expect to be up to date at minutes level
@@ -101,7 +103,7 @@ class PremiumTrendIndicator(TradeStrategy):
             c) No action for the rest of the cases
         """
 
-        curADX, curPosDI, curNegDI, curMarketPrice, curPremium, recordDate, history = self.get_current_info(history, newData)
+        curADX, curPosDI, curNegDI, curMarketPrice, curPremium, recordDate, history = self.get_current_info(history, newData, isTD)
         threshold = 40
 
         topNPremiums, bottomNPremiums = self.get_top_bottom_n_premium(
