@@ -12,6 +12,7 @@ class MinuteK(object):
         self.close_price = close
         self.open_price = open
         self.volume = volume
+        self.time = time
 
 # fetch crypto history data from Coinbase
 
@@ -34,7 +35,7 @@ def get_history_data(cryptoId='BTC-USD', startDate='2021-03-31', endDate='2020-0
                                                                         granularity=intervalInS)
         trades.extend(hourly_minute_trades)
 
-        time.sleep(0.3)
+        time.sleep(0.5)
 
         print("fetched {0} data during {1} and {2}".format(
             cryptoId, (hour_list[i-1]).isoformat(), (hour_list[i]).isoformat()))
@@ -60,9 +61,10 @@ def get_history_data(cryptoId='BTC-USD', startDate='2021-03-31', endDate='2020-0
 
 
 destLocPattern = "./analysis/data/raw/{0}_{1}_{2}_{3}.csv"
-# start = '2020-06-01'
-start = '2021-03-29'
-end = '2021-04-03'
+start = '2020-06-01'
+# start = '2020-12-01'
+# end = '2020-12-02'
+end = '2021-04-18'
 
 cryptoSymbol = 'BTC-USD'
 btcDf = get_history_data(cryptoId=cryptoSymbol, startDate=start, endDate=end,
