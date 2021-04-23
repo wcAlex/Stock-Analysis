@@ -19,8 +19,11 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
 
         data2 = pd.read_csv(os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_weekly_combined_08_04_2021.csv"), sep=",", index_col='begins_at')
 
+        data3 = pd.read_csv(os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_weekly_combined_21_03_2021.csv"), sep=",", index_col='begins_at')
+
         self.lowPriceTestData = self.data_cleanup(data1) 
         self.highPricetestData = self.data_cleanup(data2)
+        self.highPricetestData2 = self.data_cleanup(data3)
     
         return super().setUp()      
 
@@ -39,9 +42,6 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
             btc_per_share
         data["nav_low_price"] = data["low_price_x"] * \
             btc_per_share
-
-        # data["premium"] = (data["open_price_y"] -
-        #                    data["nav_open_price"]) / data["nav_open_price"]
 
         # Calculate premium high
         data["nav_high_price"] = data["high_price_x"] * btc_per_share
@@ -114,7 +114,7 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
         # name data for buying
         past_data = self.preprocess_data(self.highPricetestData)
         new_coming_data = self.lowPriceTestData
-        print(new_coming_data.to_string())
+
         # verify new coming data for buying
         self.assertEqual(16, len(new_coming_data.columns))
         self.assertEqual(328, new_coming_data.shape[0])
@@ -133,6 +133,7 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
             if curADX >= threshold and curPosDI < curNegDI:
                 self.assertTrue(curADX >= threshold)
                 self.assertEqual(1, len(trades))
+                print(trades[-1].isComplete())
                 self.assertFalse(trades[-1].isComplete())
                 self.assertEqual(41.29, trades[-1].buyPrice)
                 self.assertEqual(17.42, acct.purchasePower)
@@ -145,7 +146,8 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
                 rowCount += 1
         
         strategy = PremiumTrendIndicator(memoryLenth=4, sampleCnt=2)
-        print(sellTestData.to_string())
+        threshold = 25
+
         for row in sellTestData.itertuples():
 
             curTestData = self.dataFrame_builder(row)
@@ -155,43 +157,24 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
             if curADX >= threshold and curPosDI > curNegDI:
                 self.assertTrue(curADX >= threshold)
                 self.assertEqual(1, len(trades))
-                self.assertFalse(trades[-1].isComplete())
-                self.assertEqual(41.29, trades[-1].buyPrice)
-                self.assertEqual(17.42, acct.purchasePower)
-                self.assertEqual(2, acct.sharesOnHold)
-                self.assertEqual(recordDate, trades[-1].buyDate)
+                self.assertTrue(trades[-1].isComplete())
+                self.assertEqual(42.1, trades[-1].sellPrice)
+                self.assertEqual(84.2, trades[-1].sellValue)
+                self.assertEqual(recordDate, trades[-1].sellDate)
                 break
             else:
                 self.assertEqual(1, len(trades))
-        # print(curADX)
 
-        # # time to sell
-        # newData = pd.DataFrame([["2021-03-18T16:20:00Z", 59.5, 0.8]],
-        #                        columns=["date", "open_price_y", "premium"])
-        # df = df.append(newData.set_index("date"))
+        # Verify account status after buy and sell        
+        self.assertEqual(0, acct.sharesOnHold)
+        self.assertEqual(100 - 82.58 + 84.2, acct.purchasePower)
 
-        # curPremium, curMarketPrice, recordDate = strategy.get_current_premium(
-        #     df)
+        buyDf, sellDf = acct.create_trades_records()
+        self.assertEqual(1, buyDf.shape[0])
+        self.assertEqual(41.29, buyDf["purchase_price"][0])
+        self.assertEqual(1, sellDf.shape[0])
+        self.assertEqual(42.1, sellDf["sell_price"][0])
 
-        # strategy.make_decision(acct, df, {}, 'GBTC')
-        # trades = acct.trades
-
-        # # Verify trade record
-        # self.assertEqual(1, len(trades))
-        # self.assertTrue(trades[-1].isComplete())
-        # self.assertEqual(59.5, trades[-1].sellPrice)
-        # self.assertEqual(59.5, trades[-1].sellValue)
-        # self.assertEqual(recordDate, trades[-1].sellDate)
-
-        # # Verify account status after buy and sell
-        # self.assertEqual(0, acct.sharesOnHold)
-        # self.assertEqual(100 - 52.5 + 59.5, acct.purchasePower)
-
-        # buyDf, sellDf = acct.create_trades_records()
-        # self.assertEqual(1, buyDf.shape[0])
-        # self.assertEqual(52.5, buyDf["purchase_price"][0])
-        # self.assertEqual(1, sellDf.shape[0])
-        # self.assertEqual(59.5, sellDf["sell_price"][0])
 
     
 if __name__ == '__main__':

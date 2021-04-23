@@ -3,13 +3,14 @@ from base import TradeStrategy, Account, Decision
 import pandas as pd
 from typing import Tuple
 from ta.trend import ADXIndicator
+import time
 
 class PremiumTrendIndicator(TradeStrategy):
     """
     This trading strategy only considers premium trend using ADX.
     """
 
-    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001) -> None:
+    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, selltThreshold: int = 25) -> None:
         """
         memoryLenth: how many data points to consider in the past, 24 * 60 * 3 means minutes data from past 3 days.
         sampleCnt: how many samples to calculate buying and selling point, by default 10.
@@ -20,6 +21,8 @@ class PremiumTrendIndicator(TradeStrategy):
         self._memLenth = memoryLenth
         self._sampleCnt = sampleCnt
         self._delta = delta
+        self.buyThreshhold = buyThreshhold
+        self.selltThreshold = selltThreshold
 
     def data_preparation(self, data: pd.DataFrame) -> pd.DataFrame:
         btc_per_share = 0.00094498
@@ -101,10 +104,6 @@ class PremiumTrendIndicator(TradeStrategy):
         curADX, curPosDI, curNegDI, curMarketPrice, curPremium, recordDate, history = self.get_current_info(history, newData)
         threshold = 40
 
-        # premiumColumn = history["premium_close"]
-        # premiumPast120 = premiumColumn[:120]
-        # average = sum(premiumPast120)/120
-
         topNPremiums, bottomNPremiums = self.get_top_bottom_n_premium(
             history[:50], self._sampleCnt)
 
@@ -114,7 +113,7 @@ class PremiumTrendIndicator(TradeStrategy):
 
         
         # Buy 
-        if curADX > threshold and curNegDI > curPosDI and curPremium < avg:
+        if curADX > self.buyThreshhold and curNegDI > curPosDI and curPremium < avg:
             trade = account.buy(symbol, account.purchasePower,
                                 curMarketPrice, date=recordDate)
 
@@ -123,15 +122,8 @@ class PremiumTrendIndicator(TradeStrategy):
                     symbol, recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, avg))
 
         lastOpenTrade = account.get_last_opentrade()
-        if curPosDI > curNegDI:
-            print(11111111111111111111111111111111111111)
-        print(curMarketPrice)
-        print(curADX)
-        # print(curPosDI)
-        # print(curNegDI)
-        # print(curMarketPrice)
-        # Sell
-        if lastOpenTrade and curADX > threshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
+
+        if lastOpenTrade and curADX > self.selltThreshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
             trade = account.sell(symbol, curMarketPrice,
                                  percentage=sellPercentage, date=recordDate)
