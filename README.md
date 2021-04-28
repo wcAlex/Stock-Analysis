@@ -22,6 +22,9 @@ pip install pep8
 pip install td-ameritrade-python-api
 <!-- pip install cbpro -->
 
+<!-- Use ta library: https://github.com/bukosabino/ta, https://technical-analysis-library-in-python.readthedocs.io/en/latest/index.html-->
+pip install --upgrade ta
+
 ## Python Common Structure and Import
 https://iq-inc.com/importerror-attempted-relative-import/
 
