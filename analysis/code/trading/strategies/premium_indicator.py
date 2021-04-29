@@ -10,7 +10,7 @@ class PremiumTrendIndicator(TradeStrategy):
     This trading strategy only considers premium trend using ADX.
     """
 
-    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, selltThreshold: int = 25) -> None:
+    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, selltThreshold: int = 32) -> None:
         """
         memoryLenth: how many data points to consider in the past, 24 * 60 * 3 means minutes data from past 3 days.
         sampleCnt: how many samples to calculate buying and selling point, by default 10.
@@ -25,7 +25,7 @@ class PremiumTrendIndicator(TradeStrategy):
         self.selltThreshold = selltThreshold
 
     def data_preparation(self, data: pd.DataFrame) -> pd.DataFrame:
-        btc_per_share = 0.00094498
+        btc_per_share = 0.000944051
 
         data["nav_open_price"] = data["open_price_x"] * \
             btc_per_share
@@ -34,7 +34,7 @@ class PremiumTrendIndicator(TradeStrategy):
             btc_per_share
         data["nav_low_price"] = data["low_price_x"] * \
             btc_per_share
-
+     
         # Calculate premium high
         data["nav_high_price"] = data["high_price_x"] * btc_per_share
         data["premium_high"] = (data["high_price_y"] - data["nav_high_price"]) / data["nav_high_price"]
@@ -49,7 +49,7 @@ class PremiumTrendIndicator(TradeStrategy):
         data["nav_close_price"] = data["close_price_x"] * btc_per_share
         data["premium_close"] = (data["close_price_y"] - data["nav_close_price"]) / data["nav_close_price"]
         data["premium_close"].dropna()
-
+        
         data.dropna()
         return data
 
@@ -64,8 +64,9 @@ class PremiumTrendIndicator(TradeStrategy):
         newData = self.data_preparation(newData)
         history = history.append(newData)
         smoothed = 14
-    
-        adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
+        
+        # adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
+        adxI = ADXIndicator(history['high_price_y'], history['low_price_y'], history['close_price_y'], smoothed, False)
         history['pos_directional_indicator'] = adxI.adx_pos()
         history['neg_directional_indicator'] = adxI.adx_neg()
         history['adx'] = adxI.adx() 
@@ -104,7 +105,6 @@ class PremiumTrendIndicator(TradeStrategy):
         """
 
         curADX, curPosDI, curNegDI, curMarketPrice, curPremium, recordDate, history = self.get_current_info(history, newData, isTD)
-        threshold = 40
 
         topNPremiums, bottomNPremiums = self.get_top_bottom_n_premium(
             history[:50], self._sampleCnt)
@@ -113,6 +113,20 @@ class PremiumTrendIndicator(TradeStrategy):
         premiumSellTareget = sum(topNPremiums)/50
         avg = (premiumBuyTarget + premiumSellTareget)/2
 
+        print("account total value")
+        print(account.totalValue)
+        print("curADX")
+        print(curADX)
+        print("last buy price")
+        print(lastOpenTrade.buyValue)
+        print("Date")
+        print(recordDate)
+
+        # Value trap protection
+        avgMarketPrice = 51
+        if curMarketPrice >= avgMarketPrice:
+            self.buyThreshhold += ((curMarketPrice - avgMarketPrice) * 5)
+            self.selltThreshold -= ((curMarketPrice - avgMarketPrice) * 2.5)
         
         # Buy 
         if curADX > self.buyThreshhold and curNegDI > curPosDI and curPremium < avg:
@@ -125,6 +139,7 @@ class PremiumTrendIndicator(TradeStrategy):
 
         lastOpenTrade = account.get_last_opentrade()
 
+        # Sell
         if lastOpenTrade and curADX > self.selltThreshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
             trade = account.sell(symbol, curMarketPrice,
@@ -134,5 +149,6 @@ class PremiumTrendIndicator(TradeStrategy):
                 print("Sell {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium avg={6}".format(
                     symbol, recordDate, curMarketPrice, curPremium, int(account.sharesOnHold * sellPercentage), lastOpenTrade.sellValue, avg))
 
+    
         account.updateAccountValue(curMarketPrice)
         return (curADX, history, recordDate, curPosDI, curNegDI)
