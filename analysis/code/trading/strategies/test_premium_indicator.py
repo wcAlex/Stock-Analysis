@@ -21,7 +21,7 @@ class PremiumTrendIndicatorTest(unittest.TestCase):
 
         data3 = pd.read_csv(os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_5min_weekly_combined_21_03_2021.csv"), sep=",", index_col='begins_at')
 
-        data_yearly = pd.read_csv(os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_minute_2021.csv"), sep=",", index_col='begins_at')
+        data_yearly = pd.read_csv(os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_minute_2021_custom1.csv"), sep=",", index_col='begins_at')
 
         self.lowPriceTestData = self.data_cleanup(data1) 
         self.highPricetestData = self.data_cleanup(data2)

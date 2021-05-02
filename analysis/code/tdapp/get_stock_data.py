@@ -110,8 +110,8 @@ def get_history_data(stockSymbol='GBTC', startDate='2021-03-31', endDate='2020-0
 
 
 destLocPattern = "./analysis/data/raw/{0}_{1}_{2}_{3}.csv"
-start = '2020-12-01'
-end = '2021-04-18'
+start = '2021-04-18'
+end = '2021-05-01'
 # start = '2021-04-13'
 # end = '2021-04-15'
 
