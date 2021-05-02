@@ -10,7 +10,7 @@ class PremiumTrendIndicator(TradeStrategy):
     This trading strategy only considers premium trend using ADX.
     """
 
-    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, selltThreshold: int = 32) -> None:
+    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, sellThreshold: int = 30) -> None:
         """
         memoryLenth: how many data points to consider in the past, 24 * 60 * 3 means minutes data from past 3 days.
         sampleCnt: how many samples to calculate buying and selling point, by default 10.
@@ -22,7 +22,7 @@ class PremiumTrendIndicator(TradeStrategy):
         self._sampleCnt = sampleCnt
         self._delta = delta
         self.buyThreshhold = buyThreshhold
-        self.selltThreshold = selltThreshold
+        self.sellThreshold = sellThreshold
 
     def data_preparation(self, data: pd.DataFrame) -> pd.DataFrame:
         btc_per_share = 0.000944051
@@ -65,8 +65,7 @@ class PremiumTrendIndicator(TradeStrategy):
         history = history.append(newData)
         smoothed = 14
         
-        # adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
-        adxI = ADXIndicator(history['high_price_y'], history['low_price_y'], history['close_price_y'], smoothed, False)
+        adxI = ADXIndicator(history['premium_high'], history['premium_low'], history['premium_close'], smoothed, False)
         history['pos_directional_indicator'] = adxI.adx_pos()
         history['neg_directional_indicator'] = adxI.adx_neg()
         history['adx'] = adxI.adx() 
@@ -113,20 +112,14 @@ class PremiumTrendIndicator(TradeStrategy):
         premiumSellTareget = sum(topNPremiums)/50
         avg = (premiumBuyTarget + premiumSellTareget)/2
 
-        print("account total value")
-        print(account.totalValue)
-        print("curADX")
-        print(curADX)
-        print("last buy price")
-        print(lastOpenTrade.buyValue)
-        print("Date")
-        print(recordDate)
-
         # Value trap protection
         avgMarketPrice = 51
+
         if curMarketPrice >= avgMarketPrice:
-            self.buyThreshhold += ((curMarketPrice - avgMarketPrice) * 5)
-            self.selltThreshold -= ((curMarketPrice - avgMarketPrice) * 2.5)
+            self.buyThreshhold += ((curMarketPrice - avgMarketPrice) * 1.5)
+            print(self.buyThreshhold)
+            self.sellThreshold -= (curMarketPrice - avgMarketPrice)
+            print(self.sellThreshold)
         
         # Buy 
         if curADX > self.buyThreshhold and curNegDI > curPosDI and curPremium < avg:
@@ -140,7 +133,7 @@ class PremiumTrendIndicator(TradeStrategy):
         lastOpenTrade = account.get_last_opentrade()
 
         # Sell
-        if lastOpenTrade and curADX > self.selltThreshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
+        if lastOpenTrade and curADX > self.sellThreshold and curPosDI > curNegDI and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
             trade = account.sell(symbol, curMarketPrice,
                                  percentage=sellPercentage, date=recordDate)
@@ -148,7 +141,18 @@ class PremiumTrendIndicator(TradeStrategy):
             if trade:
                 print("Sell {0} at {1}, price={2}, premium={3}, share={4}, total={5}, current premium avg={6}".format(
                     symbol, recordDate, curMarketPrice, curPremium, int(account.sharesOnHold * sellPercentage), lastOpenTrade.sellValue, avg))
+            
+        print("account total value")
+        print(account.totalValue)
+        print("curADX")
+        print(curADX)
+        if lastOpenTrade:
+            print("last buy price")
+            print(lastOpenTrade.buyValue)
+            print("last sell price")
+            print(lastOpenTrade.sellValue)
+        print("Date")
+        print(recordDate)
 
-    
         account.updateAccountValue(curMarketPrice)
         return (curADX, history, recordDate, curPosDI, curNegDI)

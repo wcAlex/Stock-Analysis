@@ -12,7 +12,7 @@ class PremiumIndicatorStrategyEvaluationTest(unittest.TestCase):
         curDir = os.path.dirname(__file__)
 
         data = pd.read_csv(
-            os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_minute_2021.csv"), sep=",", index_col='begins_at')
+            os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_minute_2021_custom.csv"), sep=",", index_col='begins_at')
 
         cleanData = self.data_cleanup(data)
         self.pastData = self.preprocess_data(cleanData.iloc[:101])

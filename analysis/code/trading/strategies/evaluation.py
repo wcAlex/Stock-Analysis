@@ -40,8 +40,8 @@ def evaluate_strategy_premium_indicator(pastData: pd.DataFrame, newData: pd.Data
     rowCount = 0
 
     for row in newData.itertuples():
-        # if rowCount > newData.shape[0]//10:
-        #     break
+        if rowCount > newData.shape[0]//10:
+            break
         curNewData = dataFrame_builder_td(row)
         curADX, pastData, recordDate, curPosDI, curNegDI = strategy.make_decision(account, pastData, curNewData, {}, 'GBTC', True)
         rowCount += 1
