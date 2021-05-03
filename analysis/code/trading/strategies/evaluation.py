@@ -27,9 +27,11 @@ def dataFrame_builder_td(row: tuple) -> pd.DataFrame():
 
         df = pd.DataFrame(
             data, columns=
-            ["begins_at", "low_price_x", "high_price_x", "close_price_x", "open_price_x", "volume_x",
-            "time", "open_price_y", "high_price_y", "low_price_y", "close_price_y", "volume_y"])
-        df = df.set_index('begins_at')
+            ["datetime", "btc_low_price", "btc_high_price", "btc_close_price", "btc_open_price", "btc_volume",
+            "time", "gbtc_open_price", "gbtc_high_price", "gbtc_low_price", "gbtc_close_price", "gbtc_volume",
+            "nav_open_price", "nav_close_price", "nav_high_price", "nav_low_price", "premium", "premium_high", 
+            "premium_open", "premium_close", "premium_low"])
+        df = df.set_index('datetime')
 
         return df 
 
@@ -40,8 +42,8 @@ def evaluate_strategy_premium_indicator(pastData: pd.DataFrame, newData: pd.Data
     rowCount = 0
 
     for row in newData.itertuples():
-        if rowCount > newData.shape[0]//10:
-            break
+        # if rowCount > newData.shape[0]//10:
+        #     break
         curNewData = dataFrame_builder_td(row)
         curADX, pastData, recordDate, curPosDI, curNegDI = strategy.make_decision(account, pastData, curNewData, {}, 'GBTC', True)
         rowCount += 1

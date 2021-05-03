@@ -10,7 +10,7 @@ class PremiumTrendIndicator(TradeStrategy):
     This trading strategy only considers premium trend using ADX.
     """
 
-    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, sellThreshold: int = 30) -> None:
+    def __init__(self, memoryLenth: int = 24 * 60 * 3, sampleCnt: int = 10, delta=0.001, buyThreshhold: int = 40, sellThreshold: int = 35) -> None:
         """
         memoryLenth: how many data points to consider in the past, 24 * 60 * 3 means minutes data from past 3 days.
         sampleCnt: how many samples to calculate buying and selling point, by default 10.
@@ -27,27 +27,27 @@ class PremiumTrendIndicator(TradeStrategy):
     def data_preparation(self, data: pd.DataFrame) -> pd.DataFrame:
         btc_per_share = 0.000944051
 
-        data["nav_open_price"] = data["open_price_x"] * \
+        data["nav_open_price"] = data["btc_open_price"] * \
             btc_per_share
-        data["nav_close_price"] = data["close_price_x"] * btc_per_share
-        data["nav_high_price"] = data["high_price_x"] * \
+        data["nav_close_price"] = data["btc_close_price"] * btc_per_share
+        data["nav_high_price"] = data["btc_high_price"] * \
             btc_per_share
-        data["nav_low_price"] = data["low_price_x"] * \
+        data["nav_low_price"] = data["btc_low_price"] * \
             btc_per_share
      
         # Calculate premium high
-        data["nav_high_price"] = data["high_price_x"] * btc_per_share
-        data["premium_high"] = (data["high_price_y"] - data["nav_high_price"]) / data["nav_high_price"]
+        data["nav_high_price"] = data["btc_high_price"] * btc_per_share
+        data["premium_high"] = (data["gbtc_high_price"] - data["nav_high_price"]) / data["nav_high_price"]
         data["premium_high"].dropna()
 
         # Calculate premium low
-        data["nav_low_price"] = data["low_price_x"] * btc_per_share
-        data["premium_low"] = (data["low_price_y"] - data["nav_low_price"]) / data["nav_low_price"]
+        data["nav_low_price"] = data["btc_low_price"] * btc_per_share
+        data["premium_low"] = (data["gbtc_low_price"] - data["nav_low_price"]) / data["nav_low_price"]
         data["premium_low"].dropna()
 
         # Calculate premium close
-        data["nav_close_price"] = data["close_price_x"] * btc_per_share
-        data["premium_close"] = (data["close_price_y"] - data["nav_close_price"]) / data["nav_close_price"]
+        data["nav_close_price"] = data["btc_close_price"] * btc_per_share
+        data["premium_close"] = (data["gbtc_close_price"] - data["nav_close_price"]) / data["nav_close_price"]
         data["premium_close"].dropna()
         
         data.dropna()
@@ -73,7 +73,7 @@ class PremiumTrendIndicator(TradeStrategy):
         adx = history.iloc[-1]['adx']
         posDI = history.iloc[-1]['pos_directional_indicator']
         negDI = history.iloc[-1]['neg_directional_indicator']
-        marketPrice = history.iloc[-1]['open_price_y']
+        marketPrice = history.iloc[-1]['gbtc_open_price']
         curPremium = history.iloc[-1]['premium_close']
         date =  history.index[-1]
         
@@ -115,11 +115,11 @@ class PremiumTrendIndicator(TradeStrategy):
         # Value trap protection
         avgMarketPrice = 51
 
-        if curMarketPrice >= avgMarketPrice:
-            self.buyThreshhold += ((curMarketPrice - avgMarketPrice) * 1.5)
-            print(self.buyThreshhold)
-            self.sellThreshold -= (curMarketPrice - avgMarketPrice)
-            print(self.sellThreshold)
+        # if curMarketPrice >= avgMarketPrice:
+        #     self.buyThreshhold += ((curMarketPrice - avgMarketPrice) * 1.5)
+        #     print(self.buyThreshhold)
+        #     self.sellThreshold -= (curMarketPrice - avgMarketPrice)
+        #     print(self.sellThreshold)
         
         # Buy 
         if curADX > self.buyThreshhold and curNegDI > curPosDI and curPremium < avg:
