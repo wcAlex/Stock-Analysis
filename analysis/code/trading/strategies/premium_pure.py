@@ -80,6 +80,7 @@ class PremiumWithShortMemory(TradeStrategy):
                     symbol, recordDate, curMarketPrice, curPremium, int(account.purchasePower/curMarketPrice), account.purchasePower, average))
 
         lastOpenTrade = account.get_last_opentrade()
+        print(lastOpenTrade.buyPrice)
         if lastOpenTrade and curPremium > premiumSellTareget + self._delta and curMarketPrice > lastOpenTrade.buyPrice:
             sellPercentage = 1.0
             trade = account.sell(symbol, curMarketPrice,

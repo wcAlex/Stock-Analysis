@@ -115,7 +115,7 @@ class PremiumStrategyTest(unittest.TestCase):
 
         curPremium, curMarketPrice, recordDate = strategy.get_current_premium(
             df)
-
+        print(len(trades))
         strategy.make_decision(acct, df, {}, 'GBTC')
         trades = acct.trades
 
