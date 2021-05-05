@@ -15,8 +15,8 @@ class PremiumIndicatorStrategyEvaluationTest(unittest.TestCase):
             os.path.join(curDir, "../../../data/btc_gbtc/btc_gbtc_minute_2021.csv"), sep=",", index_col='datetime')
 
         cleanData = self.data_cleanup(data)
-        self.pastData = self.preprocess_data(cleanData.iloc[:101])
-        self.newData = self.data_cleanup(cleanData.iloc[101:])
+        self.pastData = self.preprocess_data(cleanData.iloc[:250])
+        self.newData = self.data_cleanup(cleanData.iloc[250:])
 
         return super().setUp()
 
