@@ -24,6 +24,7 @@ pip install td-ameritrade-python-api
 
 <!-- Use ta library: https://github.com/bukosabino/ta, https://technical-analysis-library-in-python.readthedocs.io/en/latest/index.html-->
 pip install --upgrade ta
+pip install pytz
 
 ## Python Common Structure and Import
 https://iq-inc.com/importerror-attempted-relative-import/

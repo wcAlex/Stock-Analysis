@@ -19,7 +19,7 @@ from futu import *
 # Doc: https://openapi.futunn.com/futu-api-doc/quote/request-history-kline.html
 quote_ctx = OpenQuoteContext(host='127.0.0.1', port=11111)
 ret, data, page_req_key = quote_ctx.request_history_kline(
-    'US.TSLA', start='2019-09-11', end='2019-09-18', ktype=KLType.K_1M, max_count=50)  # 每页5个，请求第一页
+    'US.GBTC', start='2020-09-11', end='2020-09-18', ktype=KLType.K_1M, max_count=50)  # 每页5个，请求第一页
 if ret == RET_OK:
     print(data)
     print(data['code'][0])    # 取第一条的股票代码
