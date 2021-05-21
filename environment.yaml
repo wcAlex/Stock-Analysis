@@ -1,0 +1,18 @@
+name: stocktrading
+channels:
+ - conda-forge
+ - anaconda
+ - plotly
+dependencies:
+  - python=3.8
+  - pandas=1.2.4
+  - plotly=4.14.3
+  - pip=21.1.1
+  - flask
+  - pip:
+    - requests==2.7.0
+    - pytz==2021.1
+    - ta==0.7.0
+    - futu-api
+    - pep8
+    - td-ameritrade-python-api
